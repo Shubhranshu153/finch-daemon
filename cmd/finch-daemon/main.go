@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -21,10 +22,12 @@ import (
 	"github.com/containerd/nerdctl/pkg/api/types"
 	"github.com/containerd/nerdctl/pkg/config"
 	"github.com/coreos/go-systemd/v22/daemon"
+	"github.com/pelletier/go-toml/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 
+	ncdefaults "github.com/containerd/nerdctl/pkg/defaults"
 	"github.com/runfinch/finch-daemon/api/router"
 	"github.com/runfinch/finch-daemon/internal/backend"
 	"github.com/runfinch/finch-daemon/internal/service/builder"
@@ -122,9 +125,21 @@ func run(options *DaemonOptions) error {
 }
 
 func newRouter(debug bool, logger *flog.Logrus) (http.Handler, error) {
+	tomlPath := ncdefaults.NerdctlTOML()
+	if v, ok := os.LookupEnv("NERDCTL_TOML"); ok {
+		tomlPath = v
+	}
+
 	conf := config.New()
+	if err := handleNerdctlGlobalOptions(conf, tomlPath); err != nil {
+		return nil, fmt.Errorf("failed to handle nerdctl global options: %w", err)
+	}
+
+	if err := handleNerdctlGlobalOptionsEnvVariable(conf); err != nil {
+		return nil, fmt.Errorf("failed to handle nerdctl global options env variable: %w", err)
+	}
+
 	conf.Debug = debug
-	conf.Namespace = defaultNamespace
 	client, err := containerd.New(conf.Address, containerd.WithDefaultNamespace(conf.Namespace))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create containerd client: %w", err)
@@ -184,4 +199,53 @@ func sdNotify(state string, logger *flog.Logrus) {
 	// (true, nil) - notification supported, data has been sent
 	notified, err := daemon.SdNotify(false, state)
 	logger.Debugf("systemd-notify result: (signaled %t), (err: %v)", notified, err)
+}
+
+func handleNerdctlGlobalOptions(cfg *config.Config, tomlPath string) error {
+	if r, err := os.Open(tomlPath); err == nil {
+		defer r.Close()
+		dec := toml.NewDecoder(r).DisallowUnknownFields() // set Strict to detect typo
+		if err := dec.Decode(cfg); err != nil {
+			return fmt.Errorf("failed to load nerdctl config (not daemon config) from %q (Hint: don't mix up daemon's `config.toml` with `nerdctl.toml`): %w", tomlPath, err)
+		}
+	} else {
+		if !errors.Is(err, os.ErrNotExist) {
+			return err
+		}
+	}
+	return nil
+}
+
+// env variables override the config file settings
+func handleNerdctlGlobalOptionsEnvVariable(cfg *config.Config) error {
+
+	if env, ok := os.LookupEnv("CONTAINERD_ADDRESS"); ok {
+		cfg.Address = env
+	}
+	if env, ok := os.LookupEnv("CONTAINERD_NAMESPACE"); ok {
+		cfg.Namespace = env
+	}
+	if env, ok := os.LookupEnv("CONTAINERD_SNAPSHOTTER"); ok {
+		cfg.Snapshotter = env
+	}
+	if env, ok := os.LookupEnv("CNI_PATH"); ok {
+		cfg.CNIPath = env
+	}
+	if env, ok := os.LookupEnv("NETCONFPATH"); ok {
+		cfg.CNINetConfPath = env
+	}
+	if env, ok := os.LookupEnv("NERDCTL_EXPERIMENTAL"); ok {
+		var err error
+		var envV bool
+		envV, err = strconv.ParseBool(env)
+		if err != nil {
+			return err
+		}
+		cfg.Experimental = envV
+	}
+	if env, ok := os.LookupEnv("NERDCTL_HOST_GATEWAY_IP"); ok {
+		cfg.HostGatewayIP = env
+	}
+	return nil
+
 }
