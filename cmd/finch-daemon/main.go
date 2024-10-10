@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -22,6 +23,7 @@ import (
 	"github.com/containerd/nerdctl/pkg/api/types"
 	"github.com/containerd/nerdctl/pkg/config"
 	"github.com/coreos/go-systemd/v22/daemon"
+	"github.com/moby/moby/pkg/pidfile"
 	"github.com/pelletier/go-toml/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
@@ -46,13 +48,14 @@ import (
 const (
 	// Keep this value in sync with `guestSocket` in README.md.
 	defaultFinchAddr = "/run/finch.sock"
-	defaultNamespace = "finch"
+	defaultPidFile   = "/var/run/finch.pid"
 )
 
 type DaemonOptions struct {
 	debug       bool
 	socketAddr  string
 	socketOwner int
+	PidFile     string
 }
 
 var options = new(DaemonOptions)
@@ -68,6 +71,7 @@ func main() {
 	rootCmd.Flags().StringVar(&options.socketAddr, "socket-addr", defaultFinchAddr, "server listening Unix socket address")
 	rootCmd.Flags().BoolVar(&options.debug, "debug", false, "turn on debug log level")
 	rootCmd.Flags().IntVar(&options.socketOwner, "socket-owner", -1, "Uid and Gid of the server socket")
+	rootCmd.Flags().StringVar(&options.PidFile, "pidfile", defaultPidFile, "Pid file location")
 	if err := rootCmd.Execute(); err != nil {
 		log.Printf("got error: %v", err)
 		log.Fatal(err)
@@ -82,6 +86,21 @@ func run(options *DaemonOptions) error {
 	// This sets the log level of the dependencies that use logrus (e.g., containerd library).
 	if options.debug {
 		logrus.SetLevel(logrus.DebugLevel)
+	}
+
+	if options.PidFile != "" {
+		if err := os.MkdirAll(filepath.Dir(options.PidFile), 0o755); err != nil {
+			return fmt.Errorf("failed to create pidfile directory %s", err)
+		}
+		if err := pidfile.Write(options.PidFile, os.Getpid()); err != nil {
+			return fmt.Errorf("failed to start daemon, ensure finch daemon is not running or delete %s %s", options.PidFile, err)
+		}
+
+		defer func() {
+			if err := os.Remove(options.PidFile); err != nil {
+				fmt.Errorf("failed to remove pidfile %s", options.PidFile)
+			}
+		}()
 	}
 
 	logger := flog.NewLogrus()
