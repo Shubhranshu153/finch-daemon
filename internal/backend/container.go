@@ -19,6 +19,7 @@ import (
 	"github.com/containerd/nerdctl/pkg/inspecttypes/dockercompat"
 	"github.com/containerd/nerdctl/pkg/inspecttypes/native"
 	"github.com/containerd/nerdctl/pkg/logging"
+	usernsNerdctlContainer "github.com/runfinch/finch-daemon/pkg/container"
 )
 
 //go:generate mockgen --destination=../../mocks/mocks_backend/nerdctlcontainersvc.go -package=mocks_backend github.com/runfinch/finch-daemon/internal/backend NerdctlContainerSvc
@@ -57,7 +58,7 @@ func (*NerdctlWrapper) StopContainer(ctx context.Context, container containerd.C
 }
 
 func (w *NerdctlWrapper) CreateContainer(ctx context.Context, args []string, netManager containerutil.NetworkOptionsManager, options types.ContainerCreateOptions) (containerd.Container, func(), error) {
-	return container.Create(ctx, w.clientWrapper.client, args, netManager, options)
+	return usernsNerdctlContainer.Create(ctx, w.clientWrapper.client, args, netManager, options)
 }
 
 func (w *NerdctlWrapper) InspectContainer(ctx context.Context, c containerd.Container) (*dockercompat.Container, error) {
