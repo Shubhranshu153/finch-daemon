@@ -36,8 +36,8 @@ const (
 	// Keep this value in sync with `guestSocket` in README.md.
 	defaultFinchAddr  = "/run/finch.sock"
 	defaultNamespace  = "finch"
-	defaultConfigPath = "/etc/finch/finch.toml"
-	defaultPidFile    = "/run/finch.pid"
+	defaultConfigPath = "/etc/nerdctl/nerdctl.toml"
+	defaultPidFile    = "/var/run/docker.pid"
 )
 
 type DaemonOptions struct {

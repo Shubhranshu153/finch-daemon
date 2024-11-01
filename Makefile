@@ -23,34 +23,27 @@ endif
 
 LDFLAGS_BASE := -X $(PACKAGE)/version.Version=$(VERSION) -X $(PACKAGE)/version.GitCommit=$(GITCOMMIT) $(EXTRA_LDFLAGS)
 
-.PHONY: build
-build:
+NERDCTL_REPO = https://github.com/containerd/nerdctl.git
+NERDCTL_TAG = v1.7.7
+NERDCTL_USERNS_PATCH = patches/total.patch
+
+.PHONY: patch-nerdctl build clean restore-mod
+build: patch-nerdctl
 ifeq ($(STATIC),)
 	@echo "Building Dynamic Binary"
+	go mod edit -replace=github.com/containerd/nerdctl@v1.7.7=./build/nerdctl && go mod tidy
 	CGO_ENABLED=1 GOOS=linux go build \
 		-ldflags "$(LDFLAGS_BASE)" \
 		-v -o $(BINARY) $(PACKAGE)/cmd/finch-daemon
 else
 	@echo "Building Static Binary"
+	go mod edit -replace=github.com/containerd/nerdctl@v1.7.7=./build/nerdctl && go mod tidy
 	CGO_ENABLED=0 GOOS=linux go build \
 		-tags netgo \
 		-ldflags "$(LDFLAGS_BASE) -extldflags '-static'" \
 		-v -o $(BINARY) $(PACKAGE)/cmd/finch-daemon
 endif
-NERDCTL_REPO = https://github.com/containerd/nerdctl.git
-NERDCTL_TAG = v1.7.7
-NERDCTL_USERNS_PATCH = patches/userns.patch
-NERDCTL_NONE_NETWORK_PATCH = patches/none_network.patch
 
-.PHONY: patch-nerdctl build clean restore-mod
-build: patch-nerdctl
-	$(eval PACKAGE := github.com/runfinch/finch-daemon)
-	$(eval VERSION ?= $(shell git describe --match 'v[0-9]*' --dirty='.modified' --always --tags))
-	$(eval GITCOMMIT := $(shell git rev-parse HEAD)$(shell if ! git diff --no-ext-diff --quiet --exit-code; then echo .m; fi))
-	$(eval LDFLAGS := "-X $(PACKAGE)/version.Version=$(VERSION) -X $(PACKAGE)/version.GitCommit=$(GITCOMMIT) $(EXTRA_LDFLAGS)")
-	go mod edit -replace=github.com/containerd/nerdctl@v1.7.7=./build/nerdctl && go mod tidy
-	GOOS=linux go build -ldflags $(LDFLAGS) -v -o $(BINARY) $(PACKAGE)/cmd/finch-daemon
-	$(MAKE) restore-mod
 
 patch-nerdctl:
 	rm -rf build && mkdir -p build
@@ -60,7 +53,7 @@ patch-nerdctl:
 	cd build/nerdctl && git fetch --tags
 	cd build/nerdctl && git checkout tags/$(NERDCTL_TAG) -b $(NERDCTL_TAG)-branch
 	cd build/nerdctl && git apply ../../$(NERDCTL_USERNS_PATCH)
-	cd build/nerdctl && git apply ../../$(NERDCTL_NONE_NETWORK_PATCH)
+
 
 restore-mod:
 	mv build/go.mod.bak go.mod
