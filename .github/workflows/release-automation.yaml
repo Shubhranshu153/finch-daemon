@@ -101,8 +101,9 @@ jobs:
         with:
           name: artifacts-${{ matrix.arch }}
           path: release/
-      - run: bash TARGET_ARCH=${{ matrix.arch }} scripts/verify-release-artifacts.sh ${{ needs.generate-artifacts.outputs.release_tag }}
-
+      - run: bash scripts/verify-release-artifacts.sh ${{ needs.generate-artifacts.outputs.release_tag }}
+        env:
+          TARGET_ARCH: ${{ matrix.arch }}
   create-release:
     needs: [generate-artifacts, validate-artifacts]
     runs-on: ${{ matrix.os }}
