@@ -20,11 +20,15 @@ jobs:
       - name: 'Get the latest tag'
         id: latest-tag
         uses: "WyriHaximus/github-action-get-previous-tag@04e8485ecb6487243907e330d522ff60f02283ce" # v1.4.0
+
   generate-artifacts:
     needs: get-latest-tag
-    runs-on: ubuntu-20.04
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]  # Use ubuntu-latest for both amd64 and arm64
+        arch: [amd64, arm64]  # Define the architectures
     env:
-      # Set during setup.
       RELEASE_TAG: ${{ needs.get-latest-tag.outputs.tag }}
       DYNAMIC_BINARY_NAME: ''
       STATIC_BINARY_NAME: ''
@@ -42,15 +46,15 @@ jobs:
         run: |
           export release_tag=${{ env.RELEASE_TAG }}
           export release_version=${release_tag/v/} # Remove v from tag name
-          echo "DYNAMIC_BINARY_NAME=finch-daemon-${release_version}-linux-amd64.tar.gz" >> $GITHUB_ENV
-          echo "STATIC_BINARY_NAME=finch-daemon-${release_version}-linux-amd64-static.tar.gz" >> $GITHUB_ENV
+          echo "DYNAMIC_BINARY_NAME=finch-daemon-${release_version}-${{ matrix.arch }}.tar.gz" >> $GITHUB_ENV
+          echo "STATIC_BINARY_NAME=finch-daemon-${release_version}-${{ matrix.arch }}-static.tar.gz" >> $GITHUB_ENV
 
           mkdir release
       - name: Install Go licenses
         run: go install github.com/google/go-licenses@latest
       - name: Create Third Party Licences File
         run: make licenses
-      - name: setup static dependecies
+      - name: setup static dependencies
         run: |
           sudo apt-get update
           sudo apt-get install libc6-dev -f
@@ -79,6 +83,7 @@ jobs:
       release_tag: ${{ env.RELEASE_TAG }}
       dynamic_binary_name: ${{ env.DYNAMIC_BINARY_NAME }}
       static_binary_name: ${{ env.STATIC_BINARY_NAME }}
+
   validate-artifacts:
     needs: generate-artifacts
     runs-on: ubuntu-latest
@@ -89,6 +94,7 @@ jobs:
           name: artifacts
           path: release/
       - run: bash scripts/verify-release-artifacts.sh ${{ needs.generate-artifacts.outputs.release_tag }}
+
   create-release:
     needs: [generate-artifacts, validate-artifacts]
     runs-on: ubuntu-latest
