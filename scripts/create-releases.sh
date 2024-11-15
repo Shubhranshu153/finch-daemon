@@ -70,7 +70,7 @@ static_binary_name=finch-daemon-${release_version}-linux-${ARCH}-static.tar.gz
 
 # Build for the selected architecture
 GOARCH=$ARCH  make build
-# cp "$LICENSE_FILE" "${OUT_DIR}"
+cp "$LICENSE_FILE" "${OUT_DIR}"
 pushd "$OUT_DIR"
 tar -czvf "$RELEASE_DIR"/"$dynamic_binary_name" -- *
 popd
