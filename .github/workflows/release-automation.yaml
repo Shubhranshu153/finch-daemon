@@ -46,12 +46,19 @@ jobs:
         run: |
           export release_tag=${{ env.RELEASE_TAG }}
           export release_version=${release_tag/v/} # Remove v from tag name
-          echo "DYNAMIC_BINARY_NAME=finch-daemon-${release_version}-${{ matrix.arch }}.tar.gz" >> $GITHUB_ENV
-          echo "STATIC_BINARY_NAME=finch-daemon-${release_version}-${{ matrix.arch }}-static.tar.gz" >> $GITHUB_ENV
+          echo "DYNAMIC_BINARY_NAME=finch-daemon-${release_version}-linux-${{ matrix.arch }}.tar.gz" >> $GITHUB_ENV
+          echo "STATIC_BINARY_NAME=finch-daemon-${release_version}-linux-${{ matrix.arch }}-static.tar.gz" >> $GITHUB_ENV
 
           mkdir release
       - name: Install Go licenses
         run: go install github.com/google/go-licenses@latest
+      - name: Install Cross Arch dependencies
+        run: |
+          ARCH=$(uname -m)
+          if [ "$ARCH" = "x86_64" ]; then
+            sudo apt update
+            sudo apt install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+          fi
       - name: Create Third Party Licences File
         run: make licenses
       - name: setup static dependencies
@@ -59,7 +66,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install libc6-dev -f
       - name: Create release binaries
-        run: make RELEASE_TAG=${{ env.RELEASE_TAG }} release
+        run: make TARGET_ARCH=${{ matrix.arch }} RELEASE_TAG=${{ env.RELEASE_TAG }} release
       - name: Verify Release version
         run: |
           mkdir -p output/static output/dynamic
