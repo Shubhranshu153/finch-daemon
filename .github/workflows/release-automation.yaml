@@ -46,8 +46,8 @@ jobs:
         run: |
           export release_tag=${{ env.RELEASE_TAG }}
           export release_version=${release_tag/v/} # Remove v from tag name
-          echo "DYNAMIC_BINARY_NAME=finch-daemon-${release_version}-${{ matrix.arch }}.tar.gz" >> $GITHUB_ENV
-          echo "STATIC_BINARY_NAME=finch-daemon-${release_version}-${{ matrix.arch }}-static.tar.gz" >> $GITHUB_ENV
+          echo "DYNAMIC_BINARY_NAME=finch-daemon-${release_version}-linux-${{ matrix.arch }}.tar.gz" >> $GITHUB_ENV
+          echo "STATIC_BINARY_NAME=finch-daemon-${release_version}-linux-${{ matrix.arch }}-static.tar.gz" >> $GITHUB_ENV
 
           mkdir release
       - name: Install Go licenses
@@ -59,7 +59,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install libc6-dev -f
       - name: Create release binaries
-        run: make RELEASE_TAG=${{ env.RELEASE_TAG }} release
+        run: make TARGET_ARCH=${{ matrix.arch }} RELEASE_TAG=${{ env.RELEASE_TAG }} release
       - name: Verify Release version
         run: |
           mkdir -p output/static output/dynamic
