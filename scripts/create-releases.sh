@@ -32,6 +32,7 @@ TAG_REGEX="v[0-9]+.[0-9]+.[0-9]+"
 ARCH=""
 case $(uname -m) in
     x86_64) ARCH="amd64" ;;
+    aarch64) ARCH="arm64" ;;
     *) echo "Error: Unsupported arch"; exit 1 ;;
 esac
 
