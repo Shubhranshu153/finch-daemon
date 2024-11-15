@@ -93,8 +93,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]  # Use ubuntu-latest for both amd64 and arm64
-        arch: [amd64, arm64]  # Define the architectures
+        os: [ubuntu-latest] 
+        arch: [amd64, arm64]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -122,7 +122,7 @@ jobs:
           prerelease: false
           generate_release_notes: false
           files: |
-            finch-daemon-${release_version}-linux-${{ matrix.arch }}.tar.gz
-            finch-daemon-${release_version}-linux-${{ matrix.arch }}.tar.gz.sha256sum
-            finch-daemon-${release_version}-linux-${{ matrix.arch }}-static.tar.gz
-            finch-daemon-${release_version}-linux-${{ matrix.arch }}-static.tar.gz.sha256sum
+            finch-daemon-${{ needs.generate-artifacts.outputs.release_tag }}-linux-${{ matrix.arch }}.tar.gz
+            finch-daemon-${{ needs.generate-artifacts.outputs.release_tag }}-linux-${{ matrix.arch }}.tar.gz.sha256sum
+            finch-daemon-${{ needs.generate-artifacts.outputs.release_tag }}-linux-${{ matrix.arch }}-static.tar.gz
+            finch-daemon-${{ needs.generate-artifacts.outputs.release_tag }}-linux-${{ matrix.arch }}-static.tar.gz.sha256sum
