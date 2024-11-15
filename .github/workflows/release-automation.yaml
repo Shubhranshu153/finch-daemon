@@ -7,6 +7,7 @@ env:
 permissions:
   contents: write
   deployments: write
+
 jobs:
   get-latest-tag:
     name: Get the latest release tag
@@ -79,7 +80,7 @@ jobs:
         shell: bash
       - uses: actions/upload-artifact@v4
         with:
-          name: artifacts
+          name: artifacts-${{ matrix.arch }}
           path: release/
           if-no-files-found: error
     outputs:
@@ -89,23 +90,31 @@ jobs:
 
   validate-artifacts:
     needs: generate-artifacts
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]  # Use ubuntu-latest for both amd64 and arm64
+        arch: [amd64, arm64]  # Define the architectures
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: artifacts
+          name: artifacts-${{ matrix.arch }}
           path: release/
-      - run: bash scripts/verify-release-artifacts.sh ${{ needs.generate-artifacts.outputs.release_tag }}
+      - run: bash TARGET_ARCH=${{ matrix.arch }} scripts/verify-release-artifacts.sh ${{ needs.generate-artifacts.outputs.release_tag }}
 
   create-release:
     needs: [generate-artifacts, validate-artifacts]
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]  # Use ubuntu-latest for both amd64 and arm64
+        arch: [amd64, arm64]  # Define the architectures
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: artifacts
+          name: artifacts-${{ matrix.arch }}
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.generate-artifacts.outputs.release_tag }}
