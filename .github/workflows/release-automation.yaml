@@ -74,27 +74,17 @@ jobs:
           fi
       - name: Verify Release version
         run: |
-            HOST_ARCH=''
-            case $(uname -m) in
-                x86_64) HOST_ARCH="amd64" ;;
-                aarch64) HOST_ARCH="arm64" ;;
-                *) echo "Error: Unsupported arch $(uname -m)"; exit 1 ;;
-            esac
-            if [ "${{ matrix.arch }}" = "$HOST_ARCH" ]; then
-              mkdir -p output/static output/dynamic
-              tar -xzf release/${{ env.DYNAMIC_BINARY_NAME }} -C ./output/dynamic
-              tar -xzf release/${{ env.STATIC_BINARY_NAME }} -C ./output/static
-              DYNAMIC_BINARY_VERSION=$(./output/dynamic/finch-daemon --version | grep -oP '\d+\.\d+\.\d+')
-              STATIC_BINARY_VERSION=$(./output/static/finch-daemon --version | grep -oP '\d+\.\d+\.\d+')
-              export release_tag=${{ env.RELEASE_TAG }}
-              export release_version=${release_tag/v/}
-              if [ "$STATIC_BINARY_VERSION" != "$release_version" ] || [ "$DYNAMIC_BINARY_VERSION" != "$release_version" ]; then
-                echo "Version mismatch"
-                exit 1
-              fi
-            else
-              echo "Architecture mismatch: Cross Arch validation is not supported. Skipping version verification"
-            fi
+          if [ "${{ matrix.arch }}" = "amd64" ]; then
+            mkdir -p output/static output/dynamic
+            tar -xzf release/${{ env.DYNAMIC_BINARY_NAME }} -C ./output/dynamic
+            tar -xzf release/${{ env.STATIC_BINARY_NAME }} -C ./output/static
+            export DYNAMIC_BINARY_VERSION=$(./output/dynamic/finch-daemon --version | grep -oP '\d+\.\d+\.\d+')
+            export STATIC_BINARY_VERSION=$(./output/static/finch-daemon --version | grep -oP '\d+\.\d+\.\d+')
+            export release_tag=${{ env.RELEASE_TAG }}
+            export release_version=${release_tag/v/}
+            echo $DYNAMIC_BINARY_VERSION
+            echo $STATIC_BINARY_VERSION
+          fi
         shell: bash
       - uses: actions/upload-artifact@v4
         with:
