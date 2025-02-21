@@ -63,6 +63,8 @@ jobs:
           tar -xzf release/${{ env.STATIC_BINARY_NAME }} -C ./output/static
           ls ./output/dynamic/
           ls ./output/static/
+          ./output/dynamic/finch-daemon --version
+          ./output/static/finch-daemon --version
         shell: bash
       - uses: actions/upload-artifact@v4
         with:
