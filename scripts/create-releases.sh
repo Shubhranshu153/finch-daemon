@@ -55,7 +55,7 @@ fi
 release_version=${1/v/} # Remove v from tag name
 dynamic_binary_name=finch-daemon-${release_version}-linux-${ARCH}.tar.gz
 static_binary_name=finch-daemon-${release_version}-linux-${ARCH}-static.tar.gz
-
+git tag --list
 make build
 cp "$LICENSE_FILE" "${OUT_DIR}"
 pushd "$OUT_DIR"
