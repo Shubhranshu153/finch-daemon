@@ -69,10 +69,6 @@ jobs:
           echo $STATIC_BINARY_VERSION
           export release_tag=${{ env.RELEASE_TAG }}
           export release_version=${release_tag/v/}
-          if ["$STATIC_BINARY_VERSION" != "$release_version"] || ["$DYNAMIC_BINARY_VERSION" != "$release_version"]; then
-            echo "Version mismatch"
-            exit 1
-          fi
         shell: bash
       - uses: actions/upload-artifact@v4
         with:
