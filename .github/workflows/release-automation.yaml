@@ -63,6 +63,10 @@ jobs:
           tar -xzf release/${{ env.STATIC_BINARY_NAME }} -C ./output/static
           DYNAMIC_BINARY_VERSION=$(./output/dynamic/finch-daemon --version | grep -oP '\d+\.\d+\.\d+')
           STATIC_BINARY_VERSION=$(./output/static/finch-daemon --version | grep -oP '\d+\.\d+\.\d+')
+          echo "dynamic ver"
+          echo $DYNAMIC_BINARY_VERSION
+          echo "static ver"
+          echo $STATIC_BINARY_VERSION
           export release_tag=${{ env.RELEASE_TAG }}
           export release_version=${release_tag/v/}
           if ["$STATIC_BINARY_VERSION" != "$release_version"] || ["$DYNAMIC_BINARY_VERSION" != "$release_version"]; then
