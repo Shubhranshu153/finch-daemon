@@ -10,21 +10,21 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/containerd/nerdctl/pkg/inspecttypes/dockercompat"
-	"github.com/containerd/nerdctl/pkg/labels"
+	"github.com/containerd/nerdctl/v2/pkg/inspecttypes/dockercompat"
+	"github.com/containerd/nerdctl/v2/pkg/labels"
 
 	"github.com/runfinch/finch-daemon/api/types"
 )
 
 const networkPrefix = "unknown-eth"
 
-func (s *service) Inspect(ctx context.Context, cid string) (*types.Container, error) {
+func (s *service) Inspect(ctx context.Context, cid string, sizeFlag bool) (*types.Container, error) {
 	c, err := s.getContainer(ctx, cid)
 	if err != nil {
 		return nil, err
 	}
 
-	inspect, err := s.nctlContainerSvc.InspectContainer(ctx, c)
+	inspect, err := s.nctlContainerSvc.InspectContainer(ctx, c, sizeFlag)
 	if err != nil {
 		return nil, err
 	}
@@ -47,6 +47,8 @@ func (s *service) Inspect(ctx context.Context, cid string) (*types.Container, er
 		AppArmorProfile: inspect.AppArmorProfile,
 		Mounts:          inspect.Mounts,
 		NetworkSettings: inspect.NetworkSettings,
+		SizeRw:          inspect.SizeRw,
+		SizeRootFs:      inspect.SizeRootFs,
 	}
 
 	cont.Config = &types.ContainerConfig{

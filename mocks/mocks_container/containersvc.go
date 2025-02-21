@@ -10,7 +10,7 @@ import (
 	reflect "reflect"
 	time "time"
 
-	types "github.com/containerd/nerdctl/pkg/api/types"
+	types "github.com/containerd/nerdctl/v2/pkg/api/types"
 	gomock "github.com/golang/mock/gomock"
 	types0 "github.com/runfinch/finch-daemon/api/types"
 )
@@ -113,18 +113,32 @@ func (mr *MockServiceMockRecorder) GetPathToFilesInContainer(arg0, arg1, arg2 in
 }
 
 // Inspect mocks base method.
-func (m *MockService) Inspect(arg0 context.Context, arg1 string) (*types0.Container, error) {
+func (m *MockService) Inspect(arg0 context.Context, arg1 string, arg2 bool) (*types0.Container, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Inspect", arg0, arg1)
+	ret := m.ctrl.Call(m, "Inspect", arg0, arg1, arg2)
 	ret0, _ := ret[0].(*types0.Container)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Inspect indicates an expected call of Inspect.
-func (mr *MockServiceMockRecorder) Inspect(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) Inspect(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Inspect", reflect.TypeOf((*MockService)(nil).Inspect), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Inspect", reflect.TypeOf((*MockService)(nil).Inspect), arg0, arg1, arg2)
+}
+
+// Kill mocks base method.
+func (m *MockService) Kill(arg0 context.Context, arg1 string, arg2 types.ContainerKillOptions) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Kill", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Kill indicates an expected call of Kill.
+func (mr *MockServiceMockRecorder) Kill(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Kill", reflect.TypeOf((*MockService)(nil).Kill), arg0, arg1, arg2)
 }
 
 // List mocks base method.

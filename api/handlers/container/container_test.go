@@ -10,7 +10,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/containerd/nerdctl/pkg/config"
+	"github.com/containerd/nerdctl/v2/pkg/config"
 	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
 	. "github.com/onsi/ginkgo/v2"
@@ -104,7 +104,7 @@ var _ = Describe("Container API", func() {
 		})
 		It("should call container inspect method", func() {
 			// setup mocks
-			service.EXPECT().Inspect(gomock.Any(), gomock.Any()).Return(nil, fmt.Errorf("error from inspect api"))
+			service.EXPECT().Inspect(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, fmt.Errorf("error from inspect api"))
 			req, _ = http.NewRequest(http.MethodGet, "/containers/123/json", nil)
 			// call the API to check if it returns the error generated from inspect method
 			router.ServeHTTP(rr, req)

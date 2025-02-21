@@ -4,21 +4,24 @@
 package backend
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"time"
 
-	"github.com/containerd/containerd"
-	"github.com/containerd/nerdctl/pkg/api/types"
-	"github.com/containerd/nerdctl/pkg/clientutil"
-	"github.com/containerd/nerdctl/pkg/cmd/container"
-	"github.com/containerd/nerdctl/pkg/containerinspector"
-	"github.com/containerd/nerdctl/pkg/containerutil"
-	"github.com/containerd/nerdctl/pkg/inspecttypes/dockercompat"
-	"github.com/containerd/nerdctl/pkg/inspecttypes/native"
-	"github.com/containerd/nerdctl/pkg/logging"
+	containerd "github.com/containerd/containerd/v2/client"
+	"github.com/containerd/nerdctl/v2/pkg/api/types"
+	"github.com/containerd/nerdctl/v2/pkg/clientutil"
+	"github.com/containerd/nerdctl/v2/pkg/cmd/container"
+	"github.com/containerd/nerdctl/v2/pkg/containerinspector"
+	"github.com/containerd/nerdctl/v2/pkg/containerutil"
+	"github.com/containerd/nerdctl/v2/pkg/inspecttypes/dockercompat"
+	"github.com/containerd/nerdctl/v2/pkg/inspecttypes/native"
+	"github.com/containerd/nerdctl/v2/pkg/logging"
 )
 
 //go:generate mockgen --destination=../../mocks/mocks_backend/nerdctlcontainersvc.go -package=mocks_backend github.com/runfinch/finch-daemon/internal/backend NerdctlContainerSvc
@@ -27,11 +30,12 @@ type NerdctlContainerSvc interface {
 	StartContainer(ctx context.Context, container containerd.Container) error
 	StopContainer(ctx context.Context, container containerd.Container, timeout *time.Duration) error
 	CreateContainer(ctx context.Context, args []string, netManager containerutil.NetworkOptionsManager, options types.ContainerCreateOptions) (containerd.Container, func(), error)
-	InspectContainer(ctx context.Context, c containerd.Container) (*dockercompat.Container, error)
+	InspectContainer(ctx context.Context, c containerd.Container, size bool) (*dockercompat.Container, error)
 	InspectNetNS(ctx context.Context, pid int) (*native.NetNS, error)
 	NewNetworkingOptionsManager(types.NetworkOptions) (containerutil.NetworkOptionsManager, error)
 	ListContainers(ctx context.Context, options types.ContainerListOptions) ([]container.ListItem, error)
 	RenameContainer(ctx context.Context, container containerd.Container, newName string, options types.ContainerRenameOptions) error
+	KillContainer(ctx context.Context, cid string, options types.ContainerKillOptions) error
 
 	// Mocked functions for container attach
 	GetDataStore() (string, error)
@@ -60,12 +64,33 @@ func (w *NerdctlWrapper) CreateContainer(ctx context.Context, args []string, net
 	return container.Create(ctx, w.clientWrapper.client, args, netManager, options)
 }
 
-func (w *NerdctlWrapper) InspectContainer(ctx context.Context, c containerd.Container) (*dockercompat.Container, error) {
-	n, err := containerinspector.Inspect(ctx, c)
+func (w *NerdctlWrapper) InspectContainer(ctx context.Context, c containerd.Container, sizeFlag bool) (*dockercompat.Container, error) {
+	var buf bytes.Buffer
+	options := types.ContainerInspectOptions{
+		Mode:   "dockercompat",
+		Stdout: &buf,
+		Size:   sizeFlag,
+		GOptions: types.GlobalCommandOptions{
+			Snapshotter: w.globalOptions.Snapshotter,
+		},
+	}
+
+	err := container.Inspect(ctx, w.clientWrapper.client, []string{c.ID()}, options)
 	if err != nil {
 		return nil, err
 	}
-	return dockercompat.ContainerFromNative(n)
+
+	// Parse the JSON response
+	var containers []*dockercompat.Container
+	if err := json.Unmarshal(buf.Bytes(), &containers); err != nil {
+		return nil, err
+	}
+
+	if len(containers) != 1 {
+		return nil, fmt.Errorf("expected 1 container, got %d", len(containers))
+	}
+
+	return containers[0], nil
 }
 
 func (w *NerdctlWrapper) InspectNetNS(ctx context.Context, pid int) (*native.NetNS, error) {
@@ -94,6 +119,10 @@ func (*NerdctlWrapper) LoggingInitContainerLogViewer(containerLabels map[string]
 
 func (*NerdctlWrapper) LoggingPrintLogsTo(stdout, stderr io.Writer, clv *logging.ContainerLogViewer) error {
 	return clv.PrintLogsTo(stdout, stderr)
+}
+
+func (w *NerdctlWrapper) KillContainer(ctx context.Context, cid string, options types.ContainerKillOptions) error {
+	return container.Kill(ctx, w.clientWrapper.client, []string{cid}, options)
 }
 
 func (w *NerdctlWrapper) GetNerdctlExe() (string, error) {

@@ -47,6 +47,8 @@ func TestRun(t *testing.T) {
 		tests.ContainerStats(opt)
 		tests.ContainerAttach(opt)
 		tests.ContainerLogs(opt)
+		tests.ContainerKill(opt)
+		tests.ContainerInspect(opt)
 
 		// functional test for volume APIs
 		tests.VolumeList(opt)
@@ -67,6 +69,9 @@ func TestRun(t *testing.T) {
 		// functional test for system api
 		tests.SystemVersion(opt)
 		tests.SystemEvents(opt)
+
+		// functional test for distribution api
+		tests.DistributionInspect(opt)
 	})
 
 	gomega.RegisterFailHandler(ginkgo.Fail)

@@ -11,13 +11,13 @@ import (
 	reflect "reflect"
 	time "time"
 
-	containerd "github.com/containerd/containerd"
-	types "github.com/containerd/nerdctl/pkg/api/types"
-	container "github.com/containerd/nerdctl/pkg/cmd/container"
-	containerutil "github.com/containerd/nerdctl/pkg/containerutil"
-	dockercompat "github.com/containerd/nerdctl/pkg/inspecttypes/dockercompat"
-	native "github.com/containerd/nerdctl/pkg/inspecttypes/native"
-	logging "github.com/containerd/nerdctl/pkg/logging"
+	client "github.com/containerd/containerd/v2/client"
+	types "github.com/containerd/nerdctl/v2/pkg/api/types"
+	container "github.com/containerd/nerdctl/v2/pkg/cmd/container"
+	containerutil "github.com/containerd/nerdctl/v2/pkg/containerutil"
+	dockercompat "github.com/containerd/nerdctl/v2/pkg/inspecttypes/dockercompat"
+	native "github.com/containerd/nerdctl/v2/pkg/inspecttypes/native"
+	logging "github.com/containerd/nerdctl/v2/pkg/logging"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -45,10 +45,10 @@ func (m *MockNerdctlContainerSvc) EXPECT() *MockNerdctlContainerSvcMockRecorder 
 }
 
 // CreateContainer mocks base method.
-func (m *MockNerdctlContainerSvc) CreateContainer(arg0 context.Context, arg1 []string, arg2 containerutil.NetworkOptionsManager, arg3 types.ContainerCreateOptions) (containerd.Container, func(), error) {
+func (m *MockNerdctlContainerSvc) CreateContainer(arg0 context.Context, arg1 []string, arg2 containerutil.NetworkOptionsManager, arg3 types.ContainerCreateOptions) (client.Container, func(), error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateContainer", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].(containerd.Container)
+	ret0, _ := ret[0].(client.Container)
 	ret1, _ := ret[1].(func())
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
@@ -91,18 +91,18 @@ func (mr *MockNerdctlContainerSvcMockRecorder) GetNerdctlExe() *gomock.Call {
 }
 
 // InspectContainer mocks base method.
-func (m *MockNerdctlContainerSvc) InspectContainer(arg0 context.Context, arg1 containerd.Container) (*dockercompat.Container, error) {
+func (m *MockNerdctlContainerSvc) InspectContainer(arg0 context.Context, arg1 client.Container, arg2 bool) (*dockercompat.Container, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "InspectContainer", arg0, arg1)
+	ret := m.ctrl.Call(m, "InspectContainer", arg0, arg1, arg2)
 	ret0, _ := ret[0].(*dockercompat.Container)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // InspectContainer indicates an expected call of InspectContainer.
-func (mr *MockNerdctlContainerSvcMockRecorder) InspectContainer(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockNerdctlContainerSvcMockRecorder) InspectContainer(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InspectContainer", reflect.TypeOf((*MockNerdctlContainerSvc)(nil).InspectContainer), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InspectContainer", reflect.TypeOf((*MockNerdctlContainerSvc)(nil).InspectContainer), arg0, arg1, arg2)
 }
 
 // InspectNetNS mocks base method.
@@ -118,6 +118,20 @@ func (m *MockNerdctlContainerSvc) InspectNetNS(arg0 context.Context, arg1 int) (
 func (mr *MockNerdctlContainerSvcMockRecorder) InspectNetNS(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InspectNetNS", reflect.TypeOf((*MockNerdctlContainerSvc)(nil).InspectNetNS), arg0, arg1)
+}
+
+// KillContainer mocks base method.
+func (m *MockNerdctlContainerSvc) KillContainer(arg0 context.Context, arg1 string, arg2 types.ContainerKillOptions) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "KillContainer", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// KillContainer indicates an expected call of KillContainer.
+func (mr *MockNerdctlContainerSvcMockRecorder) KillContainer(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KillContainer", reflect.TypeOf((*MockNerdctlContainerSvc)(nil).KillContainer), arg0, arg1, arg2)
 }
 
 // ListContainers mocks base method.
@@ -180,7 +194,7 @@ func (mr *MockNerdctlContainerSvcMockRecorder) NewNetworkingOptionsManager(arg0 
 }
 
 // RemoveContainer mocks base method.
-func (m *MockNerdctlContainerSvc) RemoveContainer(arg0 context.Context, arg1 containerd.Container, arg2, arg3 bool) error {
+func (m *MockNerdctlContainerSvc) RemoveContainer(arg0 context.Context, arg1 client.Container, arg2, arg3 bool) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RemoveContainer", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(error)
@@ -194,7 +208,7 @@ func (mr *MockNerdctlContainerSvcMockRecorder) RemoveContainer(arg0, arg1, arg2,
 }
 
 // RenameContainer mocks base method.
-func (m *MockNerdctlContainerSvc) RenameContainer(arg0 context.Context, arg1 containerd.Container, arg2 string, arg3 types.ContainerRenameOptions) error {
+func (m *MockNerdctlContainerSvc) RenameContainer(arg0 context.Context, arg1 client.Container, arg2 string, arg3 types.ContainerRenameOptions) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RenameContainer", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(error)
@@ -208,7 +222,7 @@ func (mr *MockNerdctlContainerSvcMockRecorder) RenameContainer(arg0, arg1, arg2,
 }
 
 // StartContainer mocks base method.
-func (m *MockNerdctlContainerSvc) StartContainer(arg0 context.Context, arg1 containerd.Container) error {
+func (m *MockNerdctlContainerSvc) StartContainer(arg0 context.Context, arg1 client.Container) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StartContainer", arg0, arg1)
 	ret0, _ := ret[0].(error)
@@ -222,7 +236,7 @@ func (mr *MockNerdctlContainerSvcMockRecorder) StartContainer(arg0, arg1 interfa
 }
 
 // StopContainer mocks base method.
-func (m *MockNerdctlContainerSvc) StopContainer(arg0 context.Context, arg1 containerd.Container, arg2 *time.Duration) error {
+func (m *MockNerdctlContainerSvc) StopContainer(arg0 context.Context, arg1 client.Container, arg2 *time.Duration) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StopContainer", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)

@@ -10,8 +10,8 @@ import (
 	"net/http"
 	"time"
 
-	ncTypes "github.com/containerd/nerdctl/pkg/api/types"
-	"github.com/containerd/nerdctl/pkg/config"
+	ncTypes "github.com/containerd/nerdctl/v2/pkg/api/types"
+	"github.com/containerd/nerdctl/v2/pkg/config"
 
 	"github.com/runfinch/finch-daemon/api/types"
 	"github.com/runfinch/finch-daemon/pkg/flog"
@@ -26,7 +26,7 @@ type Service interface {
 	Stop(ctx context.Context, cid string, timeout *time.Duration) error
 	Restart(ctx context.Context, cid string, timeout time.Duration) error
 	Create(ctx context.Context, image string, cmd []string, createOpt ncTypes.ContainerCreateOptions, netOpt ncTypes.NetworkOptions) (string, error)
-	Inspect(ctx context.Context, cid string) (*types.Container, error)
+	Inspect(ctx context.Context, cid string, size bool) (*types.Container, error)
 	WriteFilesAsTarArchive(filePath string, writer io.Writer, slashDot bool) error
 	Attach(ctx context.Context, cid string, opts *types.AttachOptions) error
 	List(ctx context.Context, listOpts ncTypes.ContainerListOptions) ([]types.ContainerListItem, error)
@@ -35,6 +35,7 @@ type Service interface {
 	ExtractArchiveInContainer(ctx context.Context, putArchiveOpt *types.PutArchiveOptions, body io.ReadCloser) error
 	Stats(ctx context.Context, cid string) (<-chan *types.StatsJSON, error)
 	ExecCreate(ctx context.Context, cid string, config types.ExecConfig) (string, error)
+	Kill(ctx context.Context, cid string, options ncTypes.ContainerKillOptions) error
 }
 
 // RegisterHandlers register all the supported endpoints related to the container APIs.
@@ -58,6 +59,7 @@ func RegisterHandlers(r types.VersionedRouter, service Service, conf *config.Con
 	r.HandleFunc("/{id:.*}/archive", h.putArchive, http.MethodPut)
 	r.HandleFunc("/{id:.*}/stats", h.stats, http.MethodGet)
 	r.HandleFunc("/{id:.*}/exec", h.exec, http.MethodPost)
+	r.HandleFunc("/{id:.*}/kill", h.kill, http.MethodPost)
 }
 
 // newHandler creates the handler that serves all the container related APIs.

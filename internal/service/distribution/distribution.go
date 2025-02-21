@@ -10,10 +10,11 @@ import (
 	"fmt"
 	"io"
 
-	containerdimages "github.com/containerd/containerd/images"
-	dockerresolver "github.com/containerd/containerd/remotes/docker"
+	containerdimages "github.com/containerd/containerd/v2/core/images"
+	dockerresolver "github.com/containerd/containerd/v2/core/remotes/docker"
+	cremoteerrors "github.com/containerd/containerd/v2/core/remotes/errors"
 	cerrdefs "github.com/containerd/errdefs"
-	"github.com/containerd/nerdctl/pkg/imgutil/dockerconfigresolver"
+	"github.com/containerd/nerdctl/v2/pkg/imgutil/dockerconfigresolver"
 	dockertypes "github.com/docker/cli/cli/config/types"
 	registrytypes "github.com/docker/docker/api/types/registry"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
@@ -74,8 +75,13 @@ func (s *service) Inspect(ctx context.Context, name string, ac *dockertypes.Auth
 		case cerrdefs.IsNotFound(err):
 			return nil, errdefs.NewNotFound(err)
 		case errors.Is(err, dockerresolver.ErrInvalidAuthorization):
-			return nil, errdefs.NewForbidden(err)
+			return nil, errdefs.NewUnauthenticated(err)
 		default:
+			// this error is thrown when auth fails
+			var errStatus cremoteerrors.ErrUnexpectedStatus
+			if errors.As(err, &errStatus) {
+				return nil, errdefs.NewUnauthenticated(err)
+			}
 			return nil, err
 		}
 	}
@@ -152,14 +158,9 @@ func (s *service) Inspect(ctx context.Context, name string, ac *dockertypes.Auth
 
 	return &registrytypes.DistributionInspect{
 		Descriptor: ocispec.Descriptor{
-			MediaType:    desc.MediaType,
-			Digest:       desc.Digest,
-			Size:         desc.Size,
-			URLs:         desc.URLs,
-			Annotations:  desc.Annotations,
-			Data:         desc.Data,
-			Platform:     desc.Platform,
-			ArtifactType: desc.ArtifactType,
+			MediaType: desc.MediaType,
+			Digest:    desc.Digest,
+			Size:      desc.Size,
 		},
 		Platforms: platforms,
 	}, nil

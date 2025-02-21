@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/containerd/containerd/namespaces"
-	"github.com/containerd/nerdctl/pkg/config"
+	"github.com/containerd/containerd/v2/pkg/namespaces"
+	"github.com/containerd/nerdctl/v2/pkg/config"
 	dockertypes "github.com/docker/cli/cli/config/types"
 	registrytypes "github.com/docker/docker/api/types/registry"
 	"github.com/gorilla/mux"
@@ -27,7 +27,7 @@ type Service interface {
 
 func RegisterHandlers(r types.VersionedRouter, service Service, conf *config.Config, logger flog.Logger) {
 	h := newHandler(service, conf, logger)
-	r.HandleFunc("/distribution/{name}/json", h.inspect, http.MethodGet)
+	r.HandleFunc("/distribution/{name:.*}/json", h.inspect, http.MethodGet)
 }
 
 func newHandler(service Service, conf *config.Config, logger flog.Logger) *handler {
@@ -57,13 +57,14 @@ func (h *handler) inspect(w http.ResponseWriter, r *http.Request) {
 	// map the error into http status code and send response.
 	if err != nil {
 		var code int
+		// according to the docs https://docs.docker.com/reference/api/engine/version/v1.47/#tag/Distribution/operation/DistributionInspect
+		// there are 3 possible error codes: 200, 401, 500
+		// in practice, it seems 403 is used rather than 401 and 400 is used for client input errors
 		switch {
 		case errdefs.IsInvalidFormat(err):
 			code = http.StatusBadRequest
-		case errdefs.IsForbiddenError(err):
+		case errdefs.IsUnauthenticated(err), errdefs.IsNotFound(err):
 			code = http.StatusForbidden
-		case errdefs.IsNotFound(err):
-			code = http.StatusNotFound
 		default:
 			code = http.StatusInternalServerError
 		}
