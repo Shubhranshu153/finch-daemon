@@ -61,6 +61,8 @@ jobs:
           mkdir -p output/static output/dynamic
           tar -xzf release/${{ env.DYNAMIC_BINARY_NAME }} -C ./output/dynamic
           tar -xzf release/${{ env.STATIC_BINARY_NAME }} -C ./output/static
+          ls ./output/dynamic/
+          ls ./output/static/
         shell: bash
       - uses: actions/upload-artifact@v4
         with:
